@@ -115,13 +115,16 @@ def storeData():
             Depts.append(entry[1])
             DOB.append(entry[2])
 
+
 if __name__ == "__main__":
     path = R"E:\LCS\FD_Project\images"
     images = []
     classNames = []
+
     Names= []
     Depts = []
     DOB = []
+
 
     mylist = os.listdir(path)
     storeData()

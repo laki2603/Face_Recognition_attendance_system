@@ -44,7 +44,7 @@ if __name__ == "__main__":
     print(classNames)
     print(images)
     encodelistknown = Encodings.findencodings(images)
-
+    print(images[0])
     print('Encoding Complete')
 
     cap = cv2.VideoCapture(0)

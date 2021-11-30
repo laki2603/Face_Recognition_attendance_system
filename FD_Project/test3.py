@@ -9,6 +9,7 @@ import face_recognition
 from datetime import datetime
 import os
 import threading
+import time
 
 class Ui(QMainWindow):
     def __init__(self):
@@ -17,23 +18,58 @@ class Ui(QMainWindow):
         self.count = str(0)
         self.CancelButton.clicked.connect(self.CancelFeed)
 
+        self.lb_DOB.setHidden(True)
+        self.lb_DOBDisplay.setHidden(True)
+        self.lb_Col4.setHidden(True)
+        self.lb_Col4Display.setHidden(True)
+        self.lb_Col5.setHidden(True)
+        self.lb_Col5Display.setHidden(True)
+        self.lb_MemberNotRegisteredDisplay.setHidden(True)
+
         self.Worker1 = Worker1()
         self.Worker1.start()
         self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
         self.Worker1.ImageName.connect(self.ImageNameDisplay)
         self.Worker1.ImageDept.connect(self.ImageDeptDisplay)
-        #self.Worker1.Error.connect(self.showMsgDisplay)
+        self.Worker1.dobsignal.connect(self.dobDisplay)
+
+        self.Worker1.col5signal.connect(self.Col5Display)
+        self.Worker1.Error.connect(self.showMsgDisplay)
+        self.Worker1.MemberNotRegistered.connect(self.MemberNotRegistedMsg)
 
 
-        self.t1 = threading.Thread(target=self.startThread)
+        self.t1 = threading.Thread(target=self.startThread1)
         self.t1.start()
-
+        # self.t2= threading.Thread(target=self.startThread2)
+        # self.t2.start()
         self.show()
 
-    def startThread(self):
+
+
+    def dobDisplay(self,db):
+        self.lb_DOB.setHidden(False)
+        self.lb_DOBDisplay.setHidden(False)
+        self.lb_DOBDisplay.setText(db)
+        
+    def Col4Display(self,cl4):
+        self.lb_Col4.setHidden(False)
+        self.lb_Col4Display.setHidden(False)
+        self.lb_Col4Display.setText(cl4)
+    def Col5Display(self,cl5):
+        self.lb_Col5.setHidden(False)
+        self.lb_Col5Display.setHidden(False)
+        self.lb_Col5Display.setText(cl5)
+
+    def startThread1(self):
         while True:
             self.ShowPersonCount()
             self.ShowDate()
+            self.Worker1.col4signal.connect(self.Col4Display)
+
+    # def startThread2(self):
+    #     while True:
+    #
+
     def ShowPersonCount(self):
         # print(count_)
         # print("PersonCount")
@@ -54,6 +90,13 @@ class Ui(QMainWindow):
         self.lb_DateDisplay.setText(str(date))
         self.lb_TimeDisplay.setText(str(time_))
 
+    def MemberNotRegistedMsg(self,msg_):
+        # time.sleep(1)
+        self.lb_MemberNotRegisteredDisplay.setHidden(False)
+        self.lb_MemberNotRegisteredDisplay.setText(msg_)
+
+
+
     def showMsgDisplay(self,error):
         self.Worker1.stop()
         msg = QMessageBox()
@@ -71,6 +114,7 @@ class Ui(QMainWindow):
         self.lb_DeptDisplay.setText(department)
 
     def ImageNameDisplay(self, names_):
+        self.lb_MemberNotRegisteredDisplay.setHidden(True)
         self.lb_NameDisplay.setText(names_)
 
     def ImageUpdateSlot(self, Image):
@@ -91,7 +135,11 @@ class Worker1(QThread):                 # a worker1 class which is inherited fro
     ImageUpdate = pyqtSignal(QImage)
     ImageName = pyqtSignal(str)
     ImageDept = pyqtSignal(str)
+    col4signal = pyqtSignal(str)
+    col5signal = pyqtSignal(str)
+    dobsignal = pyqtSignal(str)
     Error = pyqtSignal(str)
+    MemberNotRegistered = pyqtSignal(str)
 
     def markAttendance(self,name):               # a function to mark the Attendance
         with open(R'E:\LCS\FD_Project\Attendance.csv', 'r+') as f:          # to open the file and set the mode as read and write
@@ -137,10 +185,20 @@ class Worker1(QThread):                 # a worker1 class which is inherited fro
                     if matches[matchindex] and minm < 0.43 and not len(facescurframe)>1:
                         name = Names[matchindex+1].upper()
                         department = Depts[matchindex+1].upper()
+                        dob = DOB[matchindex+1].upper()
+                        col4 = column4[matchindex+1].upper()
+                        col5 = column5[matchindex+1].upper()
                         print(name)
                         print(department)
                         self.ImageName.emit(name)
                         self.ImageDept.emit(department)
+                        if dob != '':
+                            self.dobsignal.emit(dob)
+
+                        if col4 != '':
+                            self.col4signal.emit(col4)
+                        if col5 != '\n':
+                            self.col5signal.emit(col5)
 
                         y1, x2, y2, x1 = faceloc
                         y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
@@ -153,6 +211,7 @@ class Worker1(QThread):                 # a worker1 class which is inherited fro
 
                     else:
                         print("Member does not registered")
+                        self.MemberNotRegistered.emit("Member does not registered")
 
 
                 FlippedImage = cv2.flip(imgS, 1)
@@ -181,21 +240,34 @@ def storeData():
         datas = f.readlines()
         for data in datas:
             entry = data.split(',')
-            Names.append(entry[0])
-            Depts.append(entry[1])
-            DOB.append(entry[2])
+            Names.append(str(entry[0]))
+            Depts.append(str(entry[1]))
+            DOB.append(str(entry[2]))
+            column4.append(str(entry[3]))
+            column5.append(str(entry[4]))
 
 if __name__ == "__main__":
     path = R"E:\LCS\FD_Project\images"
     images = []
     classNames = []
+
     Names = []
     Depts = []
     DOB = []
+    column4 = []
+    column5 = []
+
     mylist = os.listdir(path)
     print(mylist)
+
     storeData()
     print(Names)
+    print(column4)
+    print(column5)
+    # c4 = column4[2]
+    # if c4  =='':
+    #     print("Success ")
+
     for cl in mylist:
         curimg = cv2.imread(f'{path}/{cl}')
         images.append(curimg)
