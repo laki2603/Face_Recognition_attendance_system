@@ -33,7 +33,7 @@
      <string/>
     </property>
     <property name="pixmap">
-     <pixmap>../Empty.png</pixmap>
+     <pixmap>background.png</pixmap>
     </property>
    </widget>
    <widget class="QLabel" name="VideoFrame">
